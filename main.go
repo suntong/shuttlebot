@@ -1,3 +1,9 @@
+////////////////////////////////////////////////////////////////////////////
+// Program: shuttlebot
+// Purpose: Telegram Forwarding Shuttle Bot
+// Authors: Tong Sun (c) 2018-2019, All rights reserved
+////////////////////////////////////////////////////////////////////////////
+
 package main
 
 import (
@@ -9,17 +15,29 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
+////////////////////////////////////////////////////////////////////////////
+// Constant and data type/structure definitions
+
 type config struct {
 	LogLevel       string   `env:"SHUTTLEBOT_LOG"`
 	TelegramToken  string   `env:"SHUTTLEBOT_TOKEN,required"`
 	TelegramChatID []string `env:"SHUTTLEBOT_CID,required"`
 }
 
+////////////////////////////////////////////////////////////////////////////
+// Global variables definitions
+
 var (
 	progname = "shuttlebot"
 	version  = "0.1.0"
 	date     = "2018-12-31"
 )
+
+////////////////////////////////////////////////////////////////////////////
+// Function definitions
+
+//==========================================================================
+// init
 
 func init() {
 	log.SetFormatter(&log.TextFormatter{
@@ -28,10 +46,16 @@ func init() {
 	})
 }
 
+//==========================================================================
+// Main
+
 func main() {
 	app := Application{}
 	app.Run()
 }
+
+////////////////////////////////////////////////////////////////////////////
+// Application definition
 
 // Application holds things together
 type Application struct {
@@ -48,26 +72,20 @@ func (app *Application) Run() {
 
 	c := config{}
 	err := env.Parse(&c)
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Fatal("Config parsing error")
-	}
+	abortOn("Config parsing error", err)
 
 	bot, err := tb.NewBot(tb.Settings{
 		Token:  c.TelegramToken,
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 	})
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Fatal("Can't start bot")
-	}
+	abortOn("Can't start bot", err)
 	app.bot = bot
 
 	log.WithFields(log.Fields{"License": "MIT"}).Info("Copyright (C) 2018-2019, Tong Sun")
 	app.Chat = make([]*tb.Chat, 0)
 	for _, chat := range c.TelegramChatID {
 		gi, err := strconv.ParseInt("-"+chat, 10, 64)
-		if err != nil {
-			log.WithFields(log.Fields{"err": err}).Fatal("CID Parse error")
-		}
+		abortOn("CID Parse error", err)
 		app.Chat = append(app.Chat, &tb.Chat{ID: gi})
 	}
 
@@ -110,5 +128,15 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 	}).Debug("Message received")
 	for _, chat := range app.Chat {
 		app.bot.Forward(chat, message)
+	}
+}
+
+//==========================================================================
+// support functions
+
+// abortOn will quit on anticipated errors gracefully without stack trace
+func abortOn(errCase string, e error) {
+	if e != nil {
+		log.WithFields(log.Fields{"Err": e}).Fatal(errCase)
 	}
 }
