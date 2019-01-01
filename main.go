@@ -10,9 +10,9 @@ import (
 )
 
 type config struct {
-	TelegramToken  string `env:"SHUTTLEBOT_TOKEN,required"`
-	TelegramChatID string `env:"SHUTTLEBOT_CID,required"`
-	LogLevel       string `env:"SHUTTLEBOT_LOG"`
+	LogLevel       string   `env:"SHUTTLEBOT_LOG"`
+	TelegramToken  string   `env:"SHUTTLEBOT_TOKEN,required"`
+	TelegramChatID []string `env:"SHUTTLEBOT_CID,required"`
 }
 
 var (
@@ -61,13 +61,15 @@ func (app *Application) Run() {
 	}
 	app.bot = bot
 
-	log.Info("Copyright (C) 2018-2019, Tong Sun")
+	log.WithFields(log.Fields{"License": "MIT"}).Info("Copyright (C) 2018-2019, Tong Sun")
 	app.Chat = make([]*tb.Chat, 0)
-	gi, err := strconv.ParseInt("-"+c.TelegramChatID, 10, 64)
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Fatal("Parse SHUTTLEBOT_CID error")
+	for _, chat := range c.TelegramChatID {
+		gi, err := strconv.ParseInt("-"+chat, 10, 64)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err}).Fatal("CID Parse error")
+		}
+		app.Chat = append(app.Chat, &tb.Chat{ID: gi})
 	}
-	app.Chat = append(app.Chat, &tb.Chat{ID: gi})
 
 	bot.Handle(tb.OnText, app.ForwardHandler)
 	bot.Handle(tb.OnAudio, app.ForwardHandler)
@@ -92,7 +94,10 @@ func (app *Application) Run() {
 		log.SetReportCaller(true)
 	}
 
-	log.Info("Bot started")
+	log.WithFields(log.Fields{
+		"Bot":           bot.Me.Username,
+		"Forwarding-to": c.TelegramChatID,
+	}).Info("Bot started")
 	bot.Start()
 }
 
