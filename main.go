@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 
 	"github.com/caarlos0/env"
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -46,13 +45,13 @@ var (
 
 func init() {
 	// https://godoc.org/github.com/go-kit/kit/log#TimestampFormat
-	timestampFormat := log.TimestampFormat(time.Now, "0102 15:04:05") // 2006-01-02
+	timestampFormat := log.TimestampFormat(time.Now, "0102T15:04:05") // 2006-01-02
 
 	// https://godoc.org/github.com/go-kit/kit/log/level
 	logger = log.NewLogfmtLogger(os.Stderr)
-	logLevel := level.AllowInfo()
-	logLevel = level.AllowDebug()
-	logger = level.NewFilter(logger, logLevel)
+	// logLevel := level.AllowInfo()
+	// logLevel = level.AllowDebug()
+	// logger = level.NewFilter(logger, logLevel)
 	logger = log.With(logger, "ts", timestampFormat)
 }
 
@@ -75,9 +74,10 @@ type Application struct {
 
 // Run from start to end
 func (app *Application) Run() {
-	level.Info(logger).Log("msg", "Telegram Forwarding Shuttle Bot",
+	logger.Log("msg", "Telegram Forwarding Shuttle Bot",
 		"version", version,
-		"built-on", date)
+		"built-on", date,
+	)
 
 	c := config{}
 	err := env.Parse(&c)
@@ -90,7 +90,7 @@ func (app *Application) Run() {
 	abortOn("Can't start bot", err)
 	app.bot = bot
 
-	level.Info(logger).Log("msg", "Copyright (C) 2018-2019, Tong Sun", "License", "MIT")
+	logger.Log("msg", "Copyright (C) 2018-2019, Tong Sun", "License", "MIT")
 	app.Chat = make([]*tb.Chat, 0)
 	for _, chat := range c.TelegramChatID {
 		gi, err := strconv.ParseInt("-"+chat, 10, 64)
@@ -113,12 +113,12 @@ func (app *Application) Run() {
 	// bot.Handle(tb.OnPinned, savePinnedMessage)
 	// bot.Handle(tb.OnAddedToGroup, showWelcomeMessage)
 
-	level.Info(logger).Log("msg", "Running with", "LogLevel", c.LogLevel)
+	logger.Log("msg", "Running with", "LogLevel", c.LogLevel)
 	// if c.LogLevel == "Debug" {
 	// 	log.SetLevel(log.DebugLevel)
 	// }
 
-	level.Info(logger).Log("msg", "Bot started",
+	logger.Log("msg", "Bot started",
 		"Bot", bot.Me.Username,
 		"Forwarding-to", c.TelegramChatID[0],
 	)
@@ -127,7 +127,7 @@ func (app *Application) Run() {
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
-	level.Debug(logger).Log("msg", "Message received",
+	logger.Log("msg", "Message received",
 		"Sender", message.Sender,
 		"Title", message.Chat.Title,
 		"Text", message.Text,
@@ -140,9 +140,19 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 //==========================================================================
 // support functions
 
+// LogInfo will print info to stderr
+func LogInfo(args ...interface{}) {
+	logger.Log("lv", "INFO", args)
+}
+
+// LogDebug will print info to stderr
+func LogDebug(args ...interface{}) {
+	logger.Log("lv", "DEBU", args)
+}
+
 // abortOn will quit on anticipated errors gracefully without stack trace
 func abortOn(errCase string, e error) {
 	if e != nil {
-		level.Error(logger).Log("at", errCase, "Err", e)
+		logger.Log("Abort", errCase, "Err", e)
 	}
 }
