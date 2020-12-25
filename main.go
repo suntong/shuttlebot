@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////
 // Program: shuttlebot
 // Purpose: Telegram Forwarding Shuttle Bot
-// Authors: Tong Sun (c) 2018-2019, All rights reserved
+// Authors: Tong Sun (c) 2018-2021, All rights reserved
 ////////////////////////////////////////////////////////////////////////////
 
 package main
@@ -46,12 +46,7 @@ var (
 func init() {
 	// https://godoc.org/github.com/go-kit/kit/log#TimestampFormat
 	timestampFormat := log.TimestampFormat(time.Now, "0102T15:04:05") // 2006-01-02
-
-	// https://godoc.org/github.com/go-kit/kit/log/level
 	logger = log.NewLogfmtLogger(os.Stderr)
-	// logLevel := level.AllowInfo()
-	// logLevel = level.AllowDebug()
-	// logger = level.NewFilter(logger, logLevel)
 	logger = log.With(logger, "ts", timestampFormat)
 }
 
@@ -90,7 +85,7 @@ func (app *Application) Run() {
 	abortOn("Can't start bot", err)
 	app.bot = bot
 
-	logger.Log("msg", "Copyright (C) 2018-2019, Tong Sun", "License", "MIT")
+	logger.Log("msg", "Copyright (C) 2018-2021, Tong Sun", "License", "MIT")
 	app.Chat = make([]*tb.Chat, 0)
 	for _, chat := range c.TelegramChatID {
 		gi, err := strconv.ParseInt("-"+chat, 10, 64)
@@ -139,16 +134,6 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 
 //==========================================================================
 // support functions
-
-// LogInfo will print info to stderr
-func LogInfo(args ...interface{}) {
-	logger.Log("lv", "INFO", args)
-}
-
-// LogDebug will print info to stderr
-func LogDebug(args ...interface{}) {
-	logger.Log("lv", "DEBU", args)
-}
 
 // abortOn will quit on anticipated errors gracefully without stack trace
 func abortOn(errCase string, e error) {
