@@ -122,10 +122,18 @@ func (app *Application) Run() {
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
+	// replyTo := fmt.Sprintf("%+v", message.ReplyTo)
+	var replyTo string
+	if message.ReplyTo == nil {
+		replyTo = "null"
+	} else {
+		replyTo = message.ReplyTo.Text
+	}
 	logger.Log("msg", "Message received",
-		"Sender", message.Sender,
+		"Sender", message.Sender.Recipient(),
 		"Title", message.Chat.Title,
 		"Text", message.Text,
+		"ReplyTo", replyTo,
 	)
 	for _, chat := range app.Chat {
 		app.bot.Forward(chat, message)
