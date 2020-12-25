@@ -7,11 +7,14 @@
 package main
 
 import (
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+
 	"github.com/caarlos0/env"
-	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -29,8 +32,10 @@ type config struct {
 
 var (
 	progname = "shuttlebot"
-	version  = "0.1.0"
-	date     = "2018-12-31"
+	version  = "0.1.1"
+	date     = "2020-12-25"
+
+	logger log.Logger
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -40,10 +45,15 @@ var (
 // init
 
 func init() {
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "0102 15:04:05", // 2006-01-02
-		FullTimestamp:   true,
-	})
+	// https://godoc.org/github.com/go-kit/kit/log#TimestampFormat
+	timestampFormat := log.TimestampFormat(time.Now, "0102 15:04:05") // 2006-01-02
+
+	// https://godoc.org/github.com/go-kit/kit/log/level
+	logger = log.NewLogfmtLogger(os.Stderr)
+	logLevel := level.AllowInfo()
+	logLevel = level.AllowDebug()
+	logger = level.NewFilter(logger, logLevel)
+	logger = log.With(logger, "ts", timestampFormat)
 }
 
 //==========================================================================
@@ -65,10 +75,9 @@ type Application struct {
 
 // Run from start to end
 func (app *Application) Run() {
-	log.WithFields(log.Fields{
-		"version":  version,
-		"built-on": date,
-	}).Info("Telegram Forwarding Shuttle Bot")
+	level.Info(logger).Log("msg", "Telegram Forwarding Shuttle Bot",
+		"version", version,
+		"built-on", date)
 
 	c := config{}
 	err := env.Parse(&c)
@@ -81,7 +90,7 @@ func (app *Application) Run() {
 	abortOn("Can't start bot", err)
 	app.bot = bot
 
-	log.WithFields(log.Fields{"License": "MIT"}).Info("Copyright (C) 2018-2019, Tong Sun")
+	level.Info(logger).Log("msg", "Copyright (C) 2018-2019, Tong Sun", "License", "MIT")
 	app.Chat = make([]*tb.Chat, 0)
 	for _, chat := range c.TelegramChatID {
 		gi, err := strconv.ParseInt("-"+chat, 10, 64)
@@ -104,28 +113,25 @@ func (app *Application) Run() {
 	// bot.Handle(tb.OnPinned, savePinnedMessage)
 	// bot.Handle(tb.OnAddedToGroup, showWelcomeMessage)
 
-	log.WithFields(log.Fields{"LogLevel": c.LogLevel}).Info("Running with")
-	if c.LogLevel == "Debug" {
-		log.SetLevel(log.DebugLevel)
-	} else if c.LogLevel == "Trace" {
-		log.SetLevel(log.TraceLevel)
-		log.SetReportCaller(true)
-	}
+	level.Info(logger).Log("msg", "Running with", "LogLevel", c.LogLevel)
+	// if c.LogLevel == "Debug" {
+	// 	log.SetLevel(log.DebugLevel)
+	// }
 
-	log.WithFields(log.Fields{
-		"Bot":           bot.Me.Username,
-		"Forwarding-to": c.TelegramChatID,
-	}).Info("Bot started")
+	level.Info(logger).Log("msg", "Bot started",
+		"Bot", bot.Me.Username,
+		"Forwarding-to", c.TelegramChatID[0],
+	)
 	bot.Start()
 }
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
-	log.WithFields(log.Fields{
-		"Sender": message.Sender,
-		"Title":  message.Chat.Title,
-		"Text":   message.Text,
-	}).Debug("Message received")
+	level.Debug(logger).Log("msg", "Message received",
+		"Sender", message.Sender,
+		"Title", message.Chat.Title,
+		"Text", message.Text,
+	)
 	for _, chat := range app.Chat {
 		app.bot.Forward(chat, message)
 	}
@@ -137,6 +143,6 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 // abortOn will quit on anticipated errors gracefully without stack trace
 func abortOn(errCase string, e error) {
 	if e != nil {
-		log.WithFields(log.Fields{"Err": e}).Fatal(errCase)
+		level.Error(logger).Log("at", errCase, "Err", e)
 	}
 }
