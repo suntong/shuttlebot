@@ -6,13 +6,11 @@
 
 package main
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// )
-
 import (
+	// 	"encoding/json"
+	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -25,9 +23,13 @@ import (
 ////////////////////////////////////////////////////////////////////////////
 // Constant and data type/structure definitions
 
-type config struct {
-	LogLevel       string   `env:"SHUTTLEBOT_LOG"`
-	TelegramToken  string   `env:"SHUTTLEBOT_TOKEN,required"`
+const desc = "Telegram Forwarding Shuttle Bot"
+
+type envConfig struct {
+	TelegramToken string `env:"SHUTTLEBOT_TOKEN,required"`
+	ConfigFile    string `env:"SHUTTLEBOT_CFG"`
+	LogLevel      string `env:"SHUTTLEBOT_LOG"`
+
 	TelegramChatID []string `env:"SHUTTLEBOT_CID,required"`
 }
 
@@ -36,9 +38,11 @@ type config struct {
 
 var (
 	progname = "shuttlebot"
-	version  = "1.0.0"
+	version  = "2.0.0"
 	date     = "2020-12-26"
 
+	c      envConfig
+	cfg    *Config
 	logger log.Logger
 )
 
@@ -59,6 +63,21 @@ func init() {
 // Main
 
 func main() {
+	err := env.Parse(&c)
+	abortOn("Env config parsing error", err)
+	if c.ConfigFile == "" {
+		c.ConfigFile = "config.yaml"
+	}
+	cfg, err = getConfig(c.ConfigFile)
+	abortOn("Config file reading error", err)
+	//fmt.Printf("%#v\n", cfg)
+	for ii := 0; ii < len(cfg.Forward); ii++ {
+		sort.Strings(cfg.Forward[ii].To)
+		sort.Ints(cfg.Forward[ii].User)
+	}
+	//fmt.Printf("%#v\n", cfg)
+
+	fmt.Println(desc)
 	app := Application{}
 	app.Run()
 }
@@ -74,14 +93,10 @@ type Application struct {
 
 // Run from start to end
 func (app *Application) Run() {
-	logger.Log("msg", "Telegram Forwarding Shuttle Bot",
+	logger.Log("msg", desc,
 		"version", version,
 		"built-on", date,
 	)
-
-	c := config{}
-	err := env.Parse(&c)
-	abortOn("Config parsing error", err)
 
 	bot, err := tb.NewBot(tb.Settings{
 		Token:  c.TelegramToken,
