@@ -7,12 +7,14 @@ import (
 )
 
 type Config struct {
-	Forward []struct {
-		Name string   `yaml:"name"`
-		From int      `yaml:"from"`
-		To   []string `yaml:"to"`
-		User []int    `yaml:"user"`
-	} `yaml:"forward"`
+	Forward []ForwardT `yaml:"forward"`
+}
+
+type ForwardT struct {
+	Name string   `yaml:"name"`
+	From int      `yaml:"from"`
+	To   []string `yaml:"to"`
+	User []int    `yaml:"user"`
 }
 
 func (c *Config) Parse(data []byte) error {
