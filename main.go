@@ -36,8 +36,8 @@ type config struct {
 
 var (
 	progname = "shuttlebot"
-	version  = "0.1.1"
-	date     = "2020-12-25"
+	version  = "1.0.0"
+	date     = "2020-12-26"
 
 	logger log.Logger
 )
