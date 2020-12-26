@@ -6,8 +6,12 @@
 
 package main
 
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// )
+
 import (
-	"encoding/json"
 	"os"
 	"strconv"
 	"time"
@@ -123,14 +127,19 @@ func (app *Application) Run() {
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
-	replyTo, _ := json.Marshal(message.ReplyTo)
 	logger.Log("msg", "Message received",
 		"Sender", message.Sender.Recipient(),
 		"Title", message.Chat.Title,
 		"Text", message.Text,
-		"ReplyTo", string(replyTo),
 	)
 	for _, chat := range app.Chat {
+		if message.ReplyTo != nil {
+			// replyTo, _ := json.Marshal(message.ReplyTo)
+			// fmt.Println("ReplyTo:", string(replyTo))
+			// if it replies to something, forward that first
+			logger.Log("_replyto", message.ReplyTo.Text)
+			app.bot.Forward(chat, message.ReplyTo)
+		}
 		app.bot.Forward(chat, message)
 	}
 }
