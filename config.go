@@ -3,18 +3,21 @@ package main
 import (
 	"io/ioutil"
 
+	tb "gopkg.in/tucnak/telebot.v2"
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Forward []ForwardT `yaml:"forward"`
+	Forward    []ForwardT `yaml:"forward"`
+	FromGroups []int
 }
 
 type ForwardT struct {
-	Name string   `yaml:"name"`
-	From int      `yaml:"from"`
-	To   []string `yaml:"to"`
-	User []int    `yaml:"user"`
+	Name string  `yaml:"name"`
+	From int     `yaml:"from"`
+	To   []int64 `yaml:"to"`
+	User []int   `yaml:"user"`
+	Chat []*tb.Chat
 }
 
 func (c *Config) Parse(data []byte) error {

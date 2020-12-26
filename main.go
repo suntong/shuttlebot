@@ -7,11 +7,9 @@
 package main
 
 import (
-	// 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -29,8 +27,6 @@ type envConfig struct {
 	TelegramToken string `env:"SHUTTLEBOT_TOKEN,required"`
 	ConfigFile    string `env:"SHUTTLEBOT_CFG"`
 	LogLevel      string `env:"SHUTTLEBOT_LOG"`
-
-	TelegramChatID []string `env:"SHUTTLEBOT_CID,required"`
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -63,6 +59,7 @@ func init() {
 // Main
 
 func main() {
+	// == Config handling
 	err := env.Parse(&c)
 	abortOn("Env config parsing error", err)
 	if c.ConfigFile == "" {
@@ -72,12 +69,17 @@ func main() {
 	abortOn("Config file reading error", err)
 	//fmt.Printf("%#v\n", cfg)
 	for ii := 0; ii < len(cfg.Forward); ii++ {
-		sort.Strings(cfg.Forward[ii].To)
+		cfg.FromGroups = append(cfg.FromGroups, cfg.Forward[ii].From)
 		sort.Ints(cfg.Forward[ii].User)
+		for _, chat := range cfg.Forward[ii].To {
+			cfg.Forward[ii].Chat = append(cfg.Forward[ii].Chat, &tb.Chat{ID: -chat})
+		}
 	}
+	sort.Ints(cfg.FromGroups)
 	//fmt.Printf("%#v\n", cfg)
 
-	fmt.Println(desc)
+	// == Application start
+	//fmt.Println(desc)
 	app := Application{}
 	app.Run()
 }
@@ -106,13 +108,6 @@ func (app *Application) Run() {
 	app.bot = bot
 
 	logger.Log("msg", "Copyright (C) 2018-2021, Tong Sun", "License", "MIT")
-	app.Chat = make([]*tb.Chat, 0)
-	for _, chat := range c.TelegramChatID {
-		gi, err := strconv.ParseInt("-"+chat, 10, 64)
-		abortOn("CID Parse error", err)
-		app.Chat = append(app.Chat, &tb.Chat{ID: gi})
-	}
-
 	bot.Handle(tb.OnText, app.ForwardHandler)
 	bot.Handle(tb.OnAudio, app.ForwardHandler)
 	bot.Handle(tb.OnContact, app.ForwardHandler)
@@ -135,27 +130,35 @@ func (app *Application) Run() {
 
 	logger.Log("msg", "Bot started",
 		"Bot", bot.Me.Username,
-		"Forwarding-to", c.TelegramChatID[0],
+		"Watching", fmt.Sprintf("%v", cfg.FromGroups),
 	)
 	bot.Start()
 }
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
+	// https://godoc.org/gopkg.in/tucnak/telebot.v2#Message
 	logger.Log("msg", "Message received",
 		"Sender", message.Sender.Recipient(),
 		"Title", message.Chat.Title,
 		"Text", message.Text,
 	)
-	for _, chat := range app.Chat {
-		if message.ReplyTo != nil {
-			// replyTo, _ := json.Marshal(message.ReplyTo)
-			// fmt.Println("ReplyTo:", string(replyTo))
-			// if it replies to something, forward that first
-			logger.Log("_replyto", message.ReplyTo.Text)
-			app.bot.Forward(chat, message.ReplyTo)
+	fmt.Printf("ReplyTo: %+v\n", message.ReplyTo)
+	ll := sort.SearchInts(cfg.FromGroups, int(-message.Chat.ID))
+	if ll == len(cfg.FromGroups) || cfg.FromGroups[ll] != int(-message.Chat.ID) {
+		// message.Chat.ID is not from the watching groups, ignore
+		logger.Log("msg", "ignored from group", "id", message.Chat.ID)
+		return
+	}
+	for _, fwd := range cfg.Forward {
+		for _, chat := range fwd.Chat {
+			if message.ReplyTo != nil {
+				// if it replies to something, forward that first
+				logger.Log("_replyto", message.ReplyTo.Text)
+				app.bot.Forward(chat, message.ReplyTo)
+			}
+			app.bot.Forward(chat, message)
 		}
-		app.bot.Forward(chat, message)
 	}
 }
 
