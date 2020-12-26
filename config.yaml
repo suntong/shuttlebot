@@ -1,0 +1,14 @@
+
+# Note all group ids are not negative
+forward:
+  - name: grp1
+    # forward from group id, in int
+    from: 1231
+    # forward to group id, in string
+    to:   [idt1]
+    # User ID to watch & forward. If blank, all message will be forwarded
+    user: [9871, 9872]
+  - name: grp2
+    from: 3451
+    to:   [idt2]
+    user: [8761, 8763]
