@@ -164,6 +164,12 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 			}
 			continue
 		}
+		if int(-message.Chat.ID) != fwd.From {
+			if debug >= 2 {
+				logger.Log("msg", "skip none-matching group", "name", fwd.From)
+			}
+			continue
+		}
 		for _, chat := range fwd.Chat {
 			if message.ReplyTo != nil {
 				// if it replies to something, forward that first
