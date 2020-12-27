@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -40,6 +41,7 @@ var (
 	c      envConfig
 	cfg    *Config
 	logger log.Logger
+	debug  = 0
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -64,6 +66,11 @@ func main() {
 	abortOn("Env config parsing error", err)
 	if c.ConfigFile == "" {
 		c.ConfigFile = "config.yaml"
+	}
+	if c.LogLevel != "" {
+		di, err := strconv.ParseInt(c.LogLevel, 10, 8)
+		abortOn("SHUTTLEBOT_LOG (int) parse error", err)
+		debug = int(di)
 	}
 	cfg, err = getConfig(c.ConfigFile)
 	abortOn("Config file reading error", err)
@@ -137,33 +144,64 @@ func (app *Application) Run() {
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
-	// https://godoc.org/gopkg.in/tucnak/telebot.v2#Message
-	logger.Log("msg", "Message received",
-		"Sender", message.Sender.Recipient(),
-		"Title", message.Chat.Title,
-		"Text", message.Text,
-	)
-	fmt.Printf("ReplyTo: %+v\n", message.ReplyTo)
-	ll := sort.SearchInts(cfg.FromGroups, int(-message.Chat.ID))
-	if ll == len(cfg.FromGroups) || cfg.FromGroups[ll] != int(-message.Chat.ID) {
+	if lacks(cfg.FromGroups, int(-message.Chat.ID)) {
 		// message.Chat.ID is not from the watching groups, ignore
-		logger.Log("msg", "ignored from group", "id", message.Chat.ID)
+		if debug >= 2 {
+			logger.Log("msg", "ignored from group", "name", message.Chat.Title)
+		}
 		return
 	}
+	logMessageIf(3, message)
+	//fmt.Printf("ReplyTo: %+v\n", message.ReplyTo)
+
+	forwarded := false
 	for _, fwd := range cfg.Forward {
+		if lacks(fwd.User, message.Sender.ID) {
+			// Sender is not in the chosen User list
+			if debug >= 2 {
+				logger.Log("msg", "ignored sender", "group", message.Chat.Title,
+					"fname", message.Sender.FirstName, "lname", message.Sender.LastName)
+			}
+			continue
+		}
 		for _, chat := range fwd.Chat {
 			if message.ReplyTo != nil {
 				// if it replies to something, forward that first
-				logger.Log("_replyto", message.ReplyTo.Text)
+				if debug >= 1 {
+					logger.Log("_replyto", message.ReplyTo.Text)
+				}
 				app.bot.Forward(chat, message.ReplyTo)
 			}
 			app.bot.Forward(chat, message)
+			forwarded = true
 		}
+	}
+	if forwarded {
+		logMessageIf(1, message)
 	}
 }
 
 //==========================================================================
 // support functions
+
+// lacks searches for x in a sorted slice of ints and returns true
+// if x is not present in a. The slice must be sorted in ascending order.
+func lacks(a []int, x int) bool {
+	ll := sort.SearchInts(a, int(x))
+	return ll == len(a) || a[ll] != int(x)
+}
+
+func logMessageIf(level int, message *tb.Message) {
+	if debug < level {
+		return
+	}
+	// https://godoc.org/gopkg.in/tucnak/telebot.v2#Message
+	logger.Log("msg", "Message received",
+		"Group", message.Chat.Title,
+		"Sender", message.Sender.Username,
+		"Text", message.Text,
+	)
+}
 
 // abortOn will quit on anticipated errors gracefully without stack trace
 func abortOn(errCase string, e error) {
