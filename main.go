@@ -8,12 +8,9 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"time"
-
-	"github.com/go-kit/kit/log"
 
 	"github.com/caarlos0/env"
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -24,12 +21,6 @@ import (
 
 const desc = "Telegram Forwarding Shuttle Bot"
 
-type envConfig struct {
-	TelegramToken string `env:"SHUTTLEBOT_TOKEN,required"`
-	ConfigFile    string `env:"SHUTTLEBOT_CFG"`
-	LogLevel      string `env:"SHUTTLEBOT_LOG"`
-}
-
 ////////////////////////////////////////////////////////////////////////////
 // Global variables definitions
 
@@ -37,25 +28,10 @@ var (
 	progname = "shuttlebot"
 	version  = "2.0.0"
 	date     = "2020-12-26"
-
-	c      envConfig
-	cfg    *Config
-	logger log.Logger
-	debug  = 0
 )
 
 ////////////////////////////////////////////////////////////////////////////
 // Function definitions
-
-//==========================================================================
-// init
-
-func init() {
-	// https://godoc.org/github.com/go-kit/kit/log#TimestampFormat
-	timestampFormat := log.TimestampFormat(time.Now, "0102T15:04:05") // 2006-01-02
-	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.With(logger, "ts", timestampFormat)
-}
 
 //==========================================================================
 // Main
@@ -114,7 +90,7 @@ func (app *Application) Run() {
 	abortOn("Can't start bot", err)
 	app.bot = bot
 
-	logger.Log("msg", "Copyright (C) 2018-2021, Tong Sun", "License", "MIT")
+	logIf(0, "Copyright (C) 2018-2021, Tong Sun", "License", "MIT")
 	bot.Handle(tb.OnText, app.ForwardHandler)
 	bot.Handle(tb.OnAudio, app.ForwardHandler)
 	bot.Handle(tb.OnContact, app.ForwardHandler)
@@ -130,12 +106,12 @@ func (app *Application) Run() {
 	// bot.Handle(tb.OnPinned, savePinnedMessage)
 	// bot.Handle(tb.OnAddedToGroup, showWelcomeMessage)
 
-	logger.Log("msg", "Running with", "LogLevel", c.LogLevel)
+	logIf(0, "Running with", "LogLevel", c.LogLevel)
 	// if c.LogLevel == "Debug" {
 	// 	log.SetLevel(log.DebugLevel)
 	// }
 
-	logger.Log("msg", "Bot started",
+	logIf(0, "Bot started",
 		"Bot", bot.Me.Username,
 		"Watching", fmt.Sprintf("%v", cfg.FromGroups),
 	)
@@ -146,9 +122,7 @@ func (app *Application) Run() {
 func (app *Application) ForwardHandler(message *tb.Message) {
 	if lacks(cfg.FromGroups, int(-message.Chat.ID)) {
 		// message.Chat.ID is not from the watching groups, ignore
-		if debug >= 2 {
-			logger.Log("msg", "ignored from group", "name", message.Chat.Title)
-		}
+		logIf(3, "ignored from group", "name", message.Chat.Title)
 		return
 	}
 	logMessageIf(3, message)
@@ -158,24 +132,18 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 	for _, fwd := range cfg.Forward {
 		if lacks(fwd.User, message.Sender.ID) {
 			// Sender is not in the chosen User list
-			if debug >= 2 {
-				logger.Log("msg", "ignored sender", "group", message.Chat.Title,
-					"fname", message.Sender.FirstName, "lname", message.Sender.LastName)
-			}
+			logIf(2, "ignored sender", "group", message.Chat.Title,
+				"fname", message.Sender.FirstName, "lname", message.Sender.LastName)
 			continue
 		}
 		if int(-message.Chat.ID) != fwd.From {
-			if debug >= 2 {
-				logger.Log("msg", "skip none-matching group", "name", fwd.From)
-			}
+			logIf(3, "skip none-matching group", "name", fwd.From)
 			continue
 		}
 		for _, chat := range fwd.Chat {
 			if message.ReplyTo != nil {
 				// if it replies to something, forward that first
-				if debug >= 1 {
-					logger.Log("_replyto", message.ReplyTo.Text)
-				}
+				logIf(1, "_Replyto", "Text", message.ReplyTo.Text)
 				app.bot.Forward(chat, message.ReplyTo)
 			}
 			app.bot.Forward(chat, message)
@@ -198,11 +166,8 @@ func lacks(a []int, x int) bool {
 }
 
 func logMessageIf(level int, message *tb.Message) {
-	if debug < level {
-		return
-	}
 	// https://godoc.org/gopkg.in/tucnak/telebot.v2#Message
-	logger.Log("msg", "Message received",
+	logIf(level, "Received",
 		"Group", message.Chat.Title,
 		"Sender", message.Sender.Username,
 		"Text", message.Text,

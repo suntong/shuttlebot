@@ -7,6 +7,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+////////////////////////////////////////////////////////////////////////////
+// Constant and data type/structure definitions
+
+type envConfig struct {
+	TelegramToken string `env:"SHUTTLEBOT_TOKEN,required"`
+	ConfigFile    string `env:"SHUTTLEBOT_CFG"`
+	LogLevel      string `env:"SHUTTLEBOT_LOG"`
+}
+
 type Config struct {
 	Forward    []ForwardT `yaml:"forward"`
 	FromGroups []int
@@ -19,6 +28,17 @@ type ForwardT struct {
 	User []int   `yaml:"user"`
 	Chat []*tb.Chat
 }
+
+////////////////////////////////////////////////////////////////////////////
+// Global variables definitions
+
+var (
+	c   envConfig
+	cfg *Config
+)
+
+////////////////////////////////////////////////////////////////////////////
+// Function definitions
 
 func (c *Config) Parse(data []byte) error {
 	return yaml.Unmarshal(data, c)
