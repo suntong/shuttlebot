@@ -59,7 +59,7 @@ func main() {
 		}
 	}
 	sort.Ints(cfg.FromGroups)
-	//fmt.Printf("%#v\n", cfg)
+	//fmt.Printf("%+v\n", cfg)
 
 	// == Application start
 	//fmt.Println(desc)
@@ -122,7 +122,9 @@ func (app *Application) Run() {
 func (app *Application) ForwardHandler(message *tb.Message) {
 	if lacks(cfg.FromGroups, int(-message.Chat.ID)) {
 		// message.Chat.ID is not from the watching groups, ignore
-		logIf(3, "ignored from group", "name", message.Chat.Title)
+		logIf(3, "ignored from group",
+			"ID", message.Chat.ID,
+			"name", message.Chat.Title)
 		return
 	}
 	logMessageIf(3, message)
