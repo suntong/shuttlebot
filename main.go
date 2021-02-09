@@ -106,12 +106,12 @@ func (app *Application) Run() {
 	// bot.Handle(tb.OnPinned, savePinnedMessage)
 	// bot.Handle(tb.OnAddedToGroup, showWelcomeMessage)
 
-	logIf(0, "Running with", "LogLevel", c.LogLevel)
+	logIf(0, "Running-with", "LogLevel", c.LogLevel)
 	// if c.LogLevel == "Debug" {
 	// 	log.SetLevel(log.DebugLevel)
 	// }
 
-	logIf(0, "Bot started",
+	logIf(0, "Bot-started",
 		"Bot", bot.Me.Username,
 		"Watching", fmt.Sprintf("%v", cfg.FromGroups),
 	)
@@ -120,9 +120,10 @@ func (app *Application) Run() {
 
 // ForwardHandler forwards received messages
 func (app *Application) ForwardHandler(message *tb.Message) {
+	// https://pkg.go.dev/gopkg.in/tucnak/telebot.v2#Message
 	if lacks(cfg.FromGroups, int(-message.Chat.ID)) {
 		// message.Chat.ID is not from the watching groups, ignore
-		logIf(3, "ignored from group",
+		logIf(3, "Ignored-from-group",
 			"ID", message.Chat.ID,
 			"name", message.Chat.Title)
 		return
@@ -134,12 +135,12 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 	for _, fwd := range cfg.Forward {
 		if lacks(fwd.User, message.Sender.ID) {
 			// Sender is not in the chosen User list
-			logIf(2, "ignored sender", "group", message.Chat.Title,
+			logIf(2, "Ignored-sender", "group", message.Chat.Title,
 				"fname", message.Sender.FirstName, "lname", message.Sender.LastName)
 			continue
 		}
 		if int(-message.Chat.ID) != fwd.From {
-			logIf(3, "skip none-matching group", "name", fwd.From)
+			logIf(3, "Skip none-matching group", "name", fwd.From)
 			continue
 		}
 		for _, chat := range fwd.Chat {
@@ -148,7 +149,12 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 				logIf(1, "_Replyto", "Text", message.ReplyTo.Text)
 				app.bot.Forward(chat, message.ReplyTo)
 			}
-			app.bot.Forward(chat, message)
+			if len([]rune(message.Text)) > 2 {
+				app.bot.Forward(chat, message)
+			} else {
+				logIf(2, "Ignored-short-message", "group", message.Chat.Title,
+					"message", message.Text)
+			}
 			forwarded = true
 		}
 	}
