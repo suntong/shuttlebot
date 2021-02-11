@@ -149,11 +149,11 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 				logIf(1, "_Replyto", "Text", message.ReplyTo.Text)
 				app.bot.Forward(chat, message.ReplyTo)
 			}
-			if len([]rune(message.Text)) > 2 {
+			if l := len([]rune(message.Text)); l == 0 || l >= 2 {
 				app.bot.Forward(chat, message)
 			} else {
 				logIf(2, "Ignored-short-message", "group", message.Chat.Title,
-					"message", message.Text)
+					"message", message.Text, "len", l)
 			}
 			forwarded = true
 		}
