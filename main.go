@@ -115,6 +115,7 @@ func (app *Application) Run() {
 
 	cfg.Fetchable = commandExists(cfg.Fetch.Downloader)
 	cfg.Fetchable = cfg.Fetchable && commandExists(cfg.Fetch.Merger)
+	cfg.Fetchable = cfg.Fetchable && commandExists("ffprobe")
 	logIf(0, "Online-media", "Fetchable", cfg.Fetchable)
 
 	logIf(0, "Bot-started.",

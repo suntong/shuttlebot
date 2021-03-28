@@ -15,9 +15,12 @@ forward:
 fetch:
   users: [55..6] # 
   command: '/get'
+  merger: ffmpeg
   downloader: youtube-dl
   vformat:  # of youtube-dl -f, --format FORMAT
     - '-f'
-    - '18/22'
+    - '243+250'
+    - '--merge-output-format'
+    - webm
   folder: '/mnt/tmp'
 

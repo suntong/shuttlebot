@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"time"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -18,7 +19,7 @@ import (
 // Fetch fetches the given media & send it back
 func (app *Application) FetchHandler(message *tb.Message) {
 	if !cfg.Fetchable {
-		//return
+		return
 	}
 
 	username := message.Sender.Username
@@ -65,10 +66,25 @@ func (app *Application) Fetch(url string, Chat *tb.Chat) string {
 		return err.Error()
 	}
 
+	// get video duration
+	cmdStr := "ffprobe -i " + fileName +
+		" 2>&1 | sed -n '/^  *Duration: /{ s/^.*Duration: //; s/,.*$//; p; }'"
+	out, err := exec.Command("sh", "-c", cmdStr).Output()
+	if err != nil {
+		return err.Error()
+	}
+	d1, _ := time.Parse("15:04:05", string(out))
+	d0, _ := time.Parse("15:04:05", "00:00:00")
+	duration := int(d1.Sub(d0).Seconds())
+
 	// Send out fileName
 	logIf(2, "Send-video",
 		"group", Chat.Title, "name", fileName)
-	v := &tb.Video{File: tb.FromDisk(fileName)}
+
+	v := &tb.Video{
+		File:  tb.FromDisk(fileName),
+		Width: 640, Height: 360, Duration: duration,
+	}
 	if debug >= 3 {
 		fmt.Printf("] %#v\n", v)
 	}
