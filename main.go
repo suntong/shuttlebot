@@ -114,6 +114,7 @@ func (app *Application) Run() {
 	// }
 
 	cfg.Fetchable = commandExists(cfg.Fetch.Downloader)
+	cfg.Fetchable = cfg.Fetchable && commandExists(cfg.Fetch.Merger)
 	logIf(0, "Online-media", "Fetchable", cfg.Fetchable)
 
 	logIf(0, "Bot-started.",
@@ -181,6 +182,7 @@ func lacks(a []int, x int) bool {
 // check if command exists
 func commandExists(cmd string) bool {
 	_, err := exec.LookPath(cmd)
+	logIf(3, "Commandexist", "Cmd", cmd, "Exists", err == nil)
 	return err == nil
 }
 

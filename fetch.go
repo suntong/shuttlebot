@@ -53,7 +53,7 @@ func (app *Application) Fetch(url string, Chat *tb.Chat) string {
 		return "Unknow url format"
 	}
 
-	fileName += ".mp4"
+	fileName += ".webm"
 	// download as fileName
 	os.Chdir(cfg.Fetch.Folder)
 	args := []string{"-o", fileName, url}

@@ -28,6 +28,7 @@ type Config struct {
 type Fetch struct {
 	Users      []int    `yaml:"users"`
 	Command    string   `yaml:"command"`
+	Merger     string   `yaml:"merger"`
 	Downloader string   `yaml:"downloader"`
 	Vformat    []string `yaml:"vformat"`
 	Folder     string   `yaml:"folder"`
