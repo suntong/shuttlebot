@@ -16,9 +16,21 @@ type envConfig struct {
 	LogLevel      string `env:"SHUTTLEBOT_LOG"`
 }
 
+// https://yaml2go.prasadg.dev/
 type Config struct {
+	Fetchable  bool
+	Fetch      Fetch      `yaml:"fetch"`
 	Forward    []ForwardT `yaml:"forward"`
 	FromGroups []int
+}
+
+// Fetch
+type Fetch struct {
+	Users      []int    `yaml:"users"`
+	Command    string   `yaml:"command"`
+	Downloader string   `yaml:"downloader"`
+	Vformat    []string `yaml:"vformat"`
+	Folder     string   `yaml:"folder"`
 }
 
 type ForwardT struct {

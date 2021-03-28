@@ -11,3 +11,13 @@ forward:
     from: 3451
     to:   [3452]
     user: [8761, 8763]
+
+fetch:
+  users: [55..6] # 
+  command: '/get'
+  downloader: youtube-dl
+  vformat:  # of youtube-dl -f, --format FORMAT
+    - '-f'
+    - '18/22'
+  folder: '/mnt/tmp'
+

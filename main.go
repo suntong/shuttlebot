@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"sort"
 	"strconv"
 	"time"
@@ -26,8 +27,8 @@ const desc = "Telegram Forwarding Shuttle Bot"
 
 var (
 	progname = "shuttlebot"
-	version  = "2.0.0"
-	date     = "2020-12-26"
+	version  = "2.1.0"
+	date     = "2021-03-28"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,7 @@ func (app *Application) Run() {
 	app.bot = bot
 
 	logIf(0, "Copyright (C) 2018-2021, Tong Sun", "License", "MIT")
+	bot.Handle(cfg.Fetch.Command, app.FetchHandler)
 	bot.Handle(tb.OnText, app.ForwardHandler)
 	bot.Handle(tb.OnAudio, app.ForwardHandler)
 	bot.Handle(tb.OnContact, app.ForwardHandler)
@@ -111,7 +113,10 @@ func (app *Application) Run() {
 	// 	log.SetLevel(log.DebugLevel)
 	// }
 
-	logIf(0, "Bot-started",
+	cfg.Fetchable = commandExists(cfg.Fetch.Downloader)
+	logIf(0, "Online-media", "Fetchable", cfg.Fetchable)
+
+	logIf(0, "Bot-started.",
 		"Bot", bot.Me.Username,
 		"Watching", fmt.Sprintf("%v", cfg.FromGroups),
 	)
@@ -171,6 +176,12 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 func lacks(a []int, x int) bool {
 	ll := sort.SearchInts(a, int(x))
 	return ll == len(a) || a[ll] != int(x)
+}
+
+// check if command exists
+func commandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
 }
 
 func logMessageIf(level int, message *tb.Message) {
