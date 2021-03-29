@@ -30,6 +30,7 @@ jobs:
       -
         name: Tests
         run: |
+          go get -v ./...
           go test -v ./...
       -
         name: Run GoReleaser
