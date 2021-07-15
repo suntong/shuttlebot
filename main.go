@@ -195,10 +195,3 @@ func logMessageIf(level int, message *tb.Message) {
 		"Text", message.Text,
 	)
 }
-
-// abortOn will quit on anticipated errors gracefully without stack trace
-func abortOn(errCase string, e error) {
-	if e != nil {
-		logger.Log("Abort", errCase, "Err", e)
-	}
-}
