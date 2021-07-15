@@ -11,10 +11,6 @@ import (
 ////////////////////////////////////////////////////////////////////////////
 // Constant and data type/structure definitions
 
-// Escape sequence
-const esc = "\x1b"
-const escSeq = esc + "\x5b"
-
 ////////////////////////////////////////////////////////////////////////////
 // Global variables definitions
 
@@ -46,8 +42,6 @@ func logIf(level int, message string, args ...interface{}) {
 	}
 	p := make([]interface{}, 0)
 	p = append(p, "msg")
-	// ansi-bold + message + unbold
-	//p = append(p, escSeq+"1m"+message+esc+"(B"+escSeq+"m")
 	p = append(p, message)
 	p = append(p, args...)
 	//fmt.Printf("%#v\n", p)
