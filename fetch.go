@@ -28,7 +28,7 @@ func (app *Application) FetchHandler(message *tb.Message) {
 	}
 	logIf(2, "Fetch-in-group",
 		"group", message.Chat.Title, "user", username)
-	if lacks(cfg.Fetch.Users, message.Sender.ID) {
+	if lacks(cfg.Fetch.Users, int(message.Sender.ID)) {
 		// Sender is not in the chosen User list
 		logIf(2, "Ignored-sender", "group", "user", username)
 		return

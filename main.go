@@ -140,7 +140,7 @@ func (app *Application) ForwardHandler(message *tb.Message) {
 
 	forwarded := false
 	for _, fwd := range cfg.Forward {
-		if lacks(fwd.User, message.Sender.ID) {
+		if lacks(fwd.User, int(message.Sender.ID)) {
 			// Sender is not in the chosen User list
 			logIf(2, "Ignored-sender", "group", message.Chat.Title,
 				"fname", message.Sender.FirstName, "lname", message.Sender.LastName)
@@ -179,6 +179,7 @@ func lacks(a []int, x int) bool {
 	ll := sort.SearchInts(a, int(x))
 	return ll == len(a) || a[ll] != int(x)
 }
+
 
 // check if command exists
 func commandExists(cmd string) bool {
